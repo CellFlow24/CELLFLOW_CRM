@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Cellflow CRM | Admin</title>
+    <!-- Basic PWA Manifest Link (You can add your manifest.json later) -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Mobile Header -->
+    <header class="mobile-header">
+        <div class="logo">Cellflow <span>CRM</span></div>
+        <div class="admin-profile">D</div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <div class="sidebar-logo">Cellflow <span>CRM</span></div>
+            <ul class="nav-links">
+                <li class="active" onclick="switchTab('pending')">⏳ Pending Orders</li>
+                <li onclick="switchTab('completed')">✅ Completed</li>
+                <li onclick="switchTab('settings')">⚙️ Settings</li>
+            </ul>
+        </nav>
+
+        <!-- Main Dashboard Content -->
+        <main class="dashboard-content">
+            <div class="dashboard-header">
+                <h2>Pending Requests</h2>
+                <button class="btn-refresh" onclick="refreshData()">🔄 Refresh</button>
+            </div>
+
+            <!-- Where the Google Sheets Data will eventually go -->
+            <div id="orderFeed" class="order-feed">
+                <!-- Data will be injected here by JS -->
+            </div>
+        </main>
+    </div>
+
+    <!-- Hidden Action Modal (Slides up when you click an order) -->
+    <div id="actionModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Manage Order</h3>
+                <span class="close-btn" onclick="closeModal()">✕</span>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Action buttons will go here -->
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
