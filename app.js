@@ -224,13 +224,11 @@ function openActionModal(ticketId) {
     
     let isZeroAmount = !order.amount || order.amount == 0;
     
-    let bodyHtml = `<div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px; font-size:0.9rem;">
+    let bodyHtml = `<div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px; font-size:0.9rem; line-height:1.5;">
         <strong>Client:</strong> ${order.name}<br>
         <strong>Email:</strong> ${order.email}<br>
         <strong>Type:</strong> ${order.type}<br>
-        <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px;">
-            <strong>Details:</strong><br>${order.details || 'N/A'}
-        </div>
+        <strong>Details:</strong> ${order.details || 'N/A'}<br>
         <div style="margin-top:10px;"><strong>History:</strong> <span style="color:#64748b; white-space:pre-wrap;">${order.history || 'No emails sent yet.'}</span></div>
     </div>`;
 
