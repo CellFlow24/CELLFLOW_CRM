@@ -139,3 +139,23 @@ function refreshData() {
         renderFeed();
     }, 800);
 }
+
+// Apps Script mapping for 'Payment Ditels' tab
+function getPaymentDetails() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName("Payment Ditels");
+  const data = sheet.getDataRange().getValues();
+  
+  // Skip header row (row 1)
+  let itemsList = [];
+  for(let i = 1; i < data.length; i++) {
+    if(data[i][0]) { // If Item name exists
+      itemsList.push({
+        item: data[i][0],              // Column A: Items (Mess Khata, Bill Flow, etc.)
+        amount: data[i][1],            // Column B: Amount
+        discountedAmount: data[i][2],  // Column C: Discounted Amount
+        tutorialLink: data[i][3]       // Column D: Tutorial Link
+      });
+    }
+  }
+  return itemsList;
+}
