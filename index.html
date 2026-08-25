@@ -18,25 +18,27 @@
         </div>
     </div>
 
-    <!-- Full Screen Loader -->
+    <!-- Full Screen Loader with Restored Logo -->
     <div id="appLoader" class="app-loader">
-        <h2>Loading Data...</h2>
+        <img src="logo.png" alt="Cellflow Logo" class="loader-logo">
+        <p style="color: #64748b; font-weight: bold;">Syncing with Google Sheets...</p>
     </div>
 
-    <!-- Mobile Header -->
+    <!-- Mobile Header with Logo -->
     <header class="mobile-header">
-        <div class="logo">Cellflow <span>CRM</span></div>
+        <div class="logo"><img src="logo.png" alt="Logo" style="width:24px; vertical-align:middle; margin-right:5px;"> Cellflow <span>CRM</span></div>
         <div class="admin-profile">D</div>
     </header>
 
     <div class="app-container">
         <!-- Sidebar Navigation -->
         <nav class="sidebar">
-            <div class="sidebar-logo">Cellflow <span>CRM</span></div>
+            <div class="sidebar-logo"><img src="logo.png" alt="Logo" style="width:30px; vertical-align:middle; margin-right:8px;"> Cellflow <span>CRM</span></div>
             <ul class="nav-links">
                 <li class="active" onclick="switchTab('Payment Pending', event)">💳 Payment Pending</li>
                 <li onclick="switchTab('Work Pending', event)">⏳ Work Pending</li>
                 <li onclick="switchTab('Completed', event)">✅ Completed</li>
+                <li onclick="switchTab('Settings', event)">⚙️ Settings</li>
             </ul>
         </nav>
 
@@ -46,13 +48,20 @@
                 <h2 id="currentTabTitle">Payment Pending</h2>
                 <button class="btn-refresh" onclick="refreshData()">🔄 Refresh</button>
             </div>
+            
+            <!-- Feed for Orders -->
             <div id="orderFeed" class="order-feed">
                 <!-- Data injected here -->
+            </div>
+
+            <!-- Feed for Settings (Payment Details) -->
+            <div id="settingsFeed" class="settings-feed" style="display: none;">
+                <!-- Payment Details Table injected here -->
             </div>
         </main>
     </div>
 
-    <!-- Dynamic Action Modal -->
+    <!-- Dynamic Action Modal (Restored with Full Inputs) -->
     <div id="actionModal" class="modal-overlay">
         <div class="modal-content">
             <span class="close-btn" onclick="closeModal('actionModal')">✕</span>
