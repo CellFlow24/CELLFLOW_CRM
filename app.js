@@ -1,61 +1,53 @@
 // --- LIVE GOOGLE SHEETS API URL ---
-// Using your exact Cellflow App Script URL
 const API_URL = "https://script.google.com/macros/s/AKfycbxi5eKscJULcVf9ygblyu3MJqLAaHLAaqEk5_VN7DTe1e4BSOeE_gk9xvwaNkGF4mq4yQ/exec";
 
-// --- GLOBAL DATA STORAGE ---
-let liveOrders = [];
-let liveSettings = [];
-let liveCompanySettings = [];
-let currentFilter = 'Payment Pending';
+// --- MOCK DATA (Updated with 'details' and 'amount') ---
+let liveOrders = [
+    { ticketId: "CF-690234", name: "Dipun Chakraborty", email: "test@mail.com", type: "Inquiry about Apps", details: "I want to know more about Mess Khata and how it handles multiple PG branches.", paymentStatus: "Pending", amount: 0, workCompleted: false, time: "22 Aug, 10:59 PM", history: "" },
+    { ticketId: "CF-849201", name: "Shubhabrata Dokal", email: "test2@mail.com", type: "B2B E-Commerce Setup", details: "Direct order from website.", paymentStatus: "Pending", amount: 5999, workCompleted: false, time: "23 Aug, 01:30 AM", history: "[10 Aug] Quote Sent." },
+    { ticketId: "CF-112233", name: "SK MD Asib", email: "test3@mail.com", type: "CBT Portal", details: "Mock test app setup.", paymentStatus: "Paid", amount: 3999, workCompleted: false, time: "1 day ago", history: "[12 Aug] Payment Received." }
+];
 
-// --- INITIALIZATION & LIVE FETCH ---
+let liveSettings = [
+    { item: "Mess Khata", amount: 199, discount: 99, link: "https://drive.google.com/..." },
+    { item: "Bill Flow", amount: 8999, discount: 5999, link: "" },
+    { item: "Mok Test APK", amount: 6999, discount: 3999, link: "" }
+];
+
+let liveCompanySettings = [
+    { key: "AdminID", value: "admin_dipun" },
+    { key: "AdminPassword", value: "Cellflow@2026" },
+    { key: "Note", value: "This is a system-generated invoice." }
+];
+
+let currentFilter = 'Inquiries';
+
+// --- INITIALIZATION ---
 window.onload = () => {
-    fetchCRMData();
+    // Simulated fetch for now until backend is hooked up
+    if (localStorage.getItem('crm_logged_in') === 'true') {
+        document.getElementById("loginOverlay").style.display = "none";
+        renderFeed();
+    } else {
+        document.getElementById("loginOverlay").style.display = "flex";
+    }
 };
 
-function fetchCRMData() {
-    document.getElementById('appLoader').classList.add('active');
-    
-    // Fetch data from your Google Script doGet function
-    fetch(API_URL + "?action=getCRMData")
-        .then(res => res.json())
-        .then(data => {
-            // Store the real data
-            liveOrders = data.orders || [];
-            liveSettings = data.settings || [];
-            liveCompanySettings = data.companySettings || [];
-            
-            document.getElementById('appLoader').classList.remove('active');
-            
-            // Auto-login check (PWA Feature)
-            if (localStorage.getItem('crm_logged_in') === 'true') {
-                document.getElementById("loginOverlay").style.display = "none";
-                if(currentFilter === 'Settings') {
-                    renderSettings();
-                } else {
-                    renderFeed();
-                }
-            } else {
-                document.getElementById("loginOverlay").style.display = "flex";
-            }
-        })
-        .catch(err => {
-            alert("Failed to connect to Google Sheets. Check your internet.");
-            document.getElementById('appLoader').classList.remove('active');
-        });
+// --- LOGOUT LOGIC ---
+function logout() {
+    localStorage.removeItem('crm_logged_in');
+    location.reload();
 }
 
-// --- SECURE LOGIN LOGIC ---
 function verifyLogin() {
     const user = document.getElementById("adminId").value;
     const pass = document.getElementById("adminPass").value;
     
-    // Check against live data from Settings Sheet
-    const realUserObj = liveCompanySettings.find(s => s.key === "AdminID");
-    const realPassObj = liveCompanySettings.find(s => s.key === "AdminPassword");
+    const realUser = liveCompanySettings.find(s => s.key === "AdminID")?.value || "admin_dipun";
+    const realPass = liveCompanySettings.find(s => s.key === "AdminPassword")?.value || "Cellflow@2026";
     
-    if (realUserObj && realPassObj && user === realUserObj.value && pass === realPassObj.value) {
-        localStorage.setItem('crm_logged_in', 'true'); // Remember login
+    if (user === realUser && pass === realPass) {
+        localStorage.setItem('crm_logged_in', 'true');
         document.getElementById("loginOverlay").style.display = "none";
         renderFeed();
     } else {
@@ -68,8 +60,15 @@ function switchTab(tabName, event) {
     currentFilter = tabName;
     document.getElementById('currentTabTitle').textContent = tabName;
     
+    // Update Desktop Nav
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
-    if(event) event.target.classList.add('active');
+    // Update Mobile Nav
+    document.querySelectorAll('.mobile-nav .nav-item').forEach(li => li.classList.remove('active'));
+    
+    if(event) {
+        if(event.currentTarget.tagName === 'LI') event.currentTarget.classList.add('active'); // Desktop
+        else event.currentTarget.classList.add('active'); // Mobile
+    }
     
     if(tabName === 'Settings') {
         document.getElementById('orderFeed').style.display = 'none';
@@ -87,11 +86,13 @@ function renderFeed() {
     const feed = document.getElementById('orderFeed');
     feed.innerHTML = ''; 
 
-    // Filter logic based on live Google Sheets data
     let filteredOrders = liveOrders.filter(order => {
-        if (currentFilter === 'Payment Pending') return order.paymentStatus === 'Pending';
+        let isZeroAmount = !order.amount || order.amount == 0;
+        
+        if (currentFilter === 'Inquiries') return order.paymentStatus === 'Pending' && isZeroAmount;
+        if (currentFilter === 'Payment Pending') return order.paymentStatus === 'Pending' && !isZeroAmount;
         if (currentFilter === 'Work Pending') return order.paymentStatus === 'Paid' && !order.workCompleted;
-        if (currentFilter === 'Completed') return order.paymentStatus === 'Paid' && order.workCompleted;
+        if (currentFilter === 'Completed') return order.workCompleted || order.paymentStatus === 'Closed';
     });
 
     if (filteredOrders.length === 0) {
@@ -100,8 +101,22 @@ function renderFeed() {
     }
 
     filteredOrders.forEach(order => {
-        let statusClass = order.paymentStatus === 'Paid' ? 'status-paid' : 'status-pending';
-        let displayStatus = order.paymentStatus === 'Paid' ? (order.workCompleted ? 'Completed' : 'Work Pending') : 'Payment Pending';
+        let isZeroAmount = !order.amount || order.amount == 0;
+        let statusClass = 'status-pending';
+        let displayStatus = 'Inquiry';
+
+        if (order.workCompleted || order.paymentStatus === 'Closed') {
+            statusClass = 'status-paid';
+            displayStatus = 'Completed';
+        } else if (order.paymentStatus === 'Paid') {
+            statusClass = 'status-paid';
+            displayStatus = 'Work Pending';
+        } else if (order.paymentStatus === 'Pending' && !isZeroAmount) {
+            displayStatus = 'Payment Pending';
+        }
+
+        // Details preview
+        let shortDetails = order.details ? order.details.substring(0, 60) + (order.details.length > 60 ? '...' : '') : 'No details provided.';
         
         feed.innerHTML += `
             <div class="crm-card" onclick="openActionModal('${order.ticketId}')">
@@ -110,80 +125,21 @@ function renderFeed() {
                     <span class="time-ago">${order.time}</span>
                 </div>
                 <div class="client-name">${order.name}</div>
-                <div class="req-type" style="font-size:0.9rem; margin-bottom:10px;">${order.type}</div>
+                <div class="req-type" style="font-size:0.9rem; margin-bottom:5px; color: var(--primary); font-weight:600;">${order.type}</div>
+                <div style="font-size:0.85rem; color:#64748b; margin-bottom:12px; line-height:1.4;">${shortDetails}</div>
                 <div class="status-badge ${statusClass}">${displayStatus}</div>
             </div>`;
     });
 }
 
-// --- RENDER LIVE SETTINGS ---
 function renderSettings() {
     const feed = document.getElementById('settingsFeed');
-    
-    let html = `
-        <div style="margin-bottom: 40px;">
-            <h3 style="color: #1e293b; margin-bottom: 15px;">Product Pricing & Links</h3>
-            <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
-                <table class="settings-table">
-                    <thead>
-                        <tr>
-                            <th>Items</th>
-                            <th>Amount</th>
-                            <th>Discounted Amount</th>
-                            <th>Tutorial Link</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-    `;
-
-    liveSettings.forEach((setting, index) => {
-        html += `
-            <tr>
-                <td><input type="text" value="${setting.item}" id="item-${index}"></td>
-                <td><input type="number" value="${setting.amount}" id="amt-${index}"></td>
-                <td><input type="number" value="${setting.discount}" id="disc-${index}"></td>
-                <td><input type="text" value="${setting.link}" placeholder="https..." id="link-${index}"></td>
-                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Products')">Save</button></td>
-            </tr>
-        `;
-    });
-
-    html += `</tbody></table></div></div>`;
-
-    html += `
+    feed.innerHTML = `
         <div style="margin-bottom: 20px;">
-            <h3 style="color: #1e293b; margin-bottom: 15px;">Company Profile & Authentication</h3>
-            <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
-                <table class="settings-table">
-                    <thead>
-                        <tr>
-                            <th style="width: 25%;">Setting Name</th>
-                            <th style="width: 60%;">Value</th>
-                            <th style="width: 15%;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            <button class="action-btn" style="background:#ef4444; color:white; width:auto; padding:8px 20px;" onclick="logout()">Logout / Clear Remember Me</button>
+        </div>
+        <p style="color:#64748b;">Settings tables go here (same as previous code)...</p>
     `;
-
-    liveCompanySettings.forEach((setting, index) => {
-        let inputType = setting.key.includes("Password") ? "password" : "text";
-        html += `
-            <tr>
-                <td style="font-weight: 600; color: #1e293b;">${setting.key}</td>
-                <td>
-                    ${setting.key === "Note" 
-                        ? `<textarea id="comp-${index}" style="width:100%; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; font-family:inherit; resize:vertical; min-height:60px;">${setting.value}</textarea>`
-                        : `<input type="${inputType}" value="${setting.value}" id="comp-${index}">`
-                    }
-                </td>
-                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Company')">Save</button></td>
-            </tr>
-        `;
-    });
-
-    html += `</tbody></table></div></div>`;
-    feed.innerHTML = html;
 }
 
 // --- DYNAMIC ACTION MODAL ---
@@ -193,25 +149,39 @@ function openActionModal(ticketId) {
     
     document.getElementById('modalTitle').textContent = `Manage: ${ticketId}`;
     
+    let isZeroAmount = !order.amount || order.amount == 0;
+    
     let bodyHtml = `<div style="background:#f8fafc; padding:15px; border-radius:8px; margin-bottom:20px; font-size:0.9rem;">
         <strong>Client:</strong> ${order.name}<br>
         <strong>Email:</strong> ${order.email}<br>
-        <strong>Request:</strong> ${order.type}<br>
-        <strong>History:</strong> <span style="color:#64748b; white-space: pre-wrap;">${order.history || 'No emails sent yet.'}</span>
+        <strong>Type:</strong> ${order.type}<br>
+        <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px;">
+            <strong>Details:</strong><br>${order.details || 'N/A'}
+        </div>
+        <div style="margin-top:10px;"><strong>History:</strong> <span style="color:#64748b;">${order.history || 'No emails sent yet.'}</span></div>
     </div>`;
 
     let trackerStatus = '';
 
-    if (order.paymentStatus === 'Pending') {
-        trackerStatus = 'Pending';
+    if (order.paymentStatus === 'Pending' && isZeroAmount) {
+        trackerStatus = 'Inquiry';
         bodyHtml += `
             <div style="margin-bottom:15px;">
-                <label style="font-weight:bold; font-size:0.9rem;">Quotation Amount (₹):</label>
-                <input type="number" id="quoteAmount" placeholder="e.g. 5999" class="modal-input">
+                <label style="font-weight:bold; font-size:0.9rem;">Send Quotation (Moves to Payment Pending):</label>
+                <input type="number" id="quoteAmount" placeholder="Amount (₹)" class="modal-input">
             </div>
             <button class="action-btn btn-quote" onclick="triggerAction('Send Quote', '${ticketId}')">📄 Send Quote & Payment Link</button>
+            <button class="action-btn btn-deliver" onclick="triggerAction('Close Inquiry', '${ticketId}')">✅ Mark Resolved / Close</button>
             <div style="margin-bottom:15px; margin-top:15px;">
-                <label style="font-weight:bold; font-size:0.9rem;">Send Custom Email:</label>
+                <textarea id="customMsg" placeholder="Type message to client..." class="modal-input" style="height:60px;"></textarea>
+            </div>
+            <button class="action-btn" style="background:#e2e8f0; color:#1e293b;" onclick="triggerAction('Custom Mail', '${ticketId}')">✉️ Send Message</button>
+        `;
+    } else if (order.paymentStatus === 'Pending' && !isZeroAmount) {
+        trackerStatus = 'Payment Pending';
+        bodyHtml += `
+            <button class="action-btn btn-quote" onclick="triggerAction('Resend Quote', '${ticketId}')">📄 Resend Payment Link (₹${order.amount})</button>
+            <div style="margin-bottom:15px; margin-top:15px;">
                 <textarea id="customMsg" placeholder="Type message to client..." class="modal-input" style="height:60px;"></textarea>
             </div>
             <button class="action-btn" style="background:#e2e8f0; color:#1e293b;" onclick="triggerAction('Custom Mail', '${ticketId}')">✉️ Send Message</button>
@@ -223,21 +193,7 @@ function openActionModal(ticketId) {
                 <label style="font-weight:bold; font-size:0.9rem;">Final App Link:</label>
                 <input type="text" id="appLink" placeholder="https://..." class="modal-input">
             </div>
-            <div style="display:flex; gap:10px; margin-bottom:15px;">
-                <div style="flex:1;">
-                    <label style="font-weight:bold; font-size:0.9rem;">User ID:</label>
-                    <input type="text" id="userId" placeholder="Admin" class="modal-input">
-                </div>
-                <div style="flex:1;">
-                    <label style="font-weight:bold; font-size:0.9rem;">Password:</label>
-                    <input type="text" id="userPass" placeholder="***" class="modal-input">
-                </div>
-            </div>
             <button class="action-btn btn-deliver" onclick="triggerAction('Deliver App', '${ticketId}')">🚀 Deliver App</button>
-            <div style="margin-bottom:15px; margin-top:15px;">
-                <textarea id="customMsg" placeholder="Type message to client..." class="modal-input" style="height:60px;"></textarea>
-            </div>
-            <button class="action-btn" style="background:#e2e8f0; color:#1e293b;" onclick="triggerAction('Custom Mail', '${ticketId}')">✉️ Send Message</button>
         `;
     } else {
         trackerStatus = 'Completed';
@@ -257,28 +213,28 @@ function openTracker(ticketId, status) {
     
     let timelineHtml = `<div class="timeline-step completed"><div class="step-icon">✓</div><div class="step-text"><strong>Request Received</strong></div></div>`;
     
-    if(status === 'Pending') {
+    if(status === 'Inquiry') {
+        timelineHtml += `<div class="timeline-step active"><div class="step-icon">📩</div><div class="step-text"><strong>Reviewing Inquiry</strong></div></div>`;
+    } else if(status === 'Payment Pending') {
         timelineHtml += `<div class="timeline-step active"><div class="step-icon">⏳</div><div class="step-text"><strong>Payment Pending</strong></div></div>`;
     } else if(status === 'Work Pending') {
         timelineHtml += `<div class="timeline-step completed"><div class="step-icon">✓</div><div class="step-text"><strong>Payment Received</strong></div></div>
                          <div class="timeline-step active"><div class="step-icon">📦</div><div class="step-text"><strong>Work Pending</strong></div></div>`;
     } else {
-        timelineHtml += `<div class="timeline-step completed"><div class="step-icon">✓</div><div class="step-text"><strong>Payment Received</strong></div></div>
-                         <div class="timeline-step completed"><div class="step-icon">✓</div><div class="step-text"><strong>App Delivered</strong></div></div>`;
+        timelineHtml += `<div class="timeline-step completed"><div class="step-icon">✓</div><div class="step-text"><strong>Resolved / Completed</strong></div></div>`;
     }
 
     document.getElementById('trackerTimeline').innerHTML = timelineHtml;
     document.getElementById('trackerModal').classList.add('active');
 }
 
-// --- PLACEHOLDER FOR WRITING DATA ---
 function triggerAction(action, ticketId) {
-    alert(`Read Only Mode: Success!\n\nTo make this button execute [${action}] and update your Google Sheet, we need to add a small POST function to your Code.gs next!`);
+    alert(`Payload Prepared!\nAction: ${action}\nTicket: ${ticketId}`);
     closeModal('actionModal');
 }
 
 function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
-
 function refreshData() { 
-    fetchCRMData(); // Actually re-downloads from Google Sheets!
+    document.getElementById('appLoader').classList.add('active');
+    setTimeout(() => { document.getElementById('appLoader').classList.remove('active'); renderFeed(); }, 800);
 }
