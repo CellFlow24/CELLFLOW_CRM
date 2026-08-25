@@ -1,53 +1,60 @@
 // --- LIVE GOOGLE SHEETS API URL ---
 const API_URL = "https://script.google.com/macros/s/AKfycbxi5eKscJULcVf9ygblyu3MJqLAaHLAaqEk5_VN7DTe1e4BSOeE_gk9xvwaNkGF4mq4yQ/exec";
 
-// --- MOCK DATA (Updated with 'details' and 'amount') ---
-let liveOrders = [
-    { ticketId: "CF-690234", name: "Dipun Chakraborty", email: "test@mail.com", type: "Inquiry about Apps", details: "I want to know more about Mess Khata and how it handles multiple PG branches.", paymentStatus: "Pending", amount: 0, workCompleted: false, time: "22 Aug, 10:59 PM", history: "" },
-    { ticketId: "CF-849201", name: "Shubhabrata Dokal", email: "test2@mail.com", type: "B2B E-Commerce Setup", details: "Direct order from website.", paymentStatus: "Pending", amount: 5999, workCompleted: false, time: "23 Aug, 01:30 AM", history: "[10 Aug] Quote Sent." },
-    { ticketId: "CF-112233", name: "SK MD Asib", email: "test3@mail.com", type: "CBT Portal", details: "Mock test app setup.", paymentStatus: "Paid", amount: 3999, workCompleted: false, time: "1 day ago", history: "[12 Aug] Payment Received." }
-];
-
-let liveSettings = [
-    { item: "Mess Khata", amount: 199, discount: 99, link: "https://drive.google.com/..." },
-    { item: "Bill Flow", amount: 8999, discount: 5999, link: "" },
-    { item: "Mok Test APK", amount: 6999, discount: 3999, link: "" }
-];
-
-let liveCompanySettings = [
-    { key: "AdminID", value: "admin_dipun" },
-    { key: "AdminPassword", value: "Cellflow@2026" },
-    { key: "Note", value: "This is a system-generated invoice." }
-];
-
+// --- GLOBAL DATA STORAGE (Starts 100% Empty!) ---
+let liveOrders = [];
+let liveSettings = [];
+let liveCompanySettings = [];
 let currentFilter = 'Inquiries';
 
-// --- INITIALIZATION ---
+// --- INITIALIZATION & LIVE FETCH ---
 window.onload = () => {
-    // Simulated fetch for now until backend is hooked up
-    if (localStorage.getItem('crm_logged_in') === 'true') {
-        document.getElementById("loginOverlay").style.display = "none";
-        renderFeed();
-    } else {
-        document.getElementById("loginOverlay").style.display = "flex";
-    }
+    fetchCRMData();
 };
 
-// --- LOGOUT LOGIC ---
-function logout() {
-    localStorage.removeItem('crm_logged_in');
-    location.reload();
+function fetchCRMData() {
+    document.getElementById('appLoader').classList.add('active');
+    
+    // Fetch data from your Google Script doGet function
+    fetch(API_URL + "?action=getCRMData")
+        .then(res => res.json())
+        .then(data => {
+            // Store the real data
+            liveOrders = data.orders || [];
+            liveSettings = data.settings || [];
+            liveCompanySettings = data.companySettings || [];
+            
+            document.getElementById('appLoader').classList.remove('active');
+            
+            // Auto-login check (PWA Feature)
+            if (localStorage.getItem('crm_logged_in') === 'true') {
+                document.getElementById("loginOverlay").style.display = "none";
+                if(currentFilter === 'Settings') {
+                    renderSettings();
+                } else {
+                    renderFeed();
+                }
+            } else {
+                document.getElementById("loginOverlay").style.display = "flex";
+            }
+        })
+        .catch(err => {
+            alert("Failed to connect to Google Sheets. Check your internet.");
+            document.getElementById('appLoader').classList.remove('active');
+        });
 }
 
+// --- SECURE LOGIN LOGIC ---
 function verifyLogin() {
     const user = document.getElementById("adminId").value;
     const pass = document.getElementById("adminPass").value;
     
-    const realUser = liveCompanySettings.find(s => s.key === "AdminID")?.value || "admin_dipun";
-    const realPass = liveCompanySettings.find(s => s.key === "AdminPassword")?.value || "Cellflow@2026";
+    // Check against live data from Settings Sheet
+    const realUserObj = liveCompanySettings.find(s => s.key === "AdminID");
+    const realPassObj = liveCompanySettings.find(s => s.key === "AdminPassword");
     
-    if (user === realUser && pass === realPass) {
-        localStorage.setItem('crm_logged_in', 'true');
+    if (realUserObj && realPassObj && user === realUserObj.value && pass === realPassObj.value) {
+        localStorage.setItem('crm_logged_in', 'true'); // Remember login
         document.getElementById("loginOverlay").style.display = "none";
         renderFeed();
     } else {
@@ -55,14 +62,17 @@ function verifyLogin() {
     }
 }
 
+function logout() {
+    localStorage.removeItem('crm_logged_in');
+    location.reload();
+}
+
 // --- TAB SWITCHING ---
 function switchTab(tabName, event) {
     currentFilter = tabName;
     document.getElementById('currentTabTitle').textContent = tabName;
     
-    // Update Desktop Nav
     document.querySelectorAll('.nav-links li').forEach(li => li.classList.remove('active'));
-    // Update Mobile Nav
     document.querySelectorAll('.mobile-nav .nav-item').forEach(li => li.classList.remove('active'));
     
     if(event) {
@@ -86,6 +96,7 @@ function renderFeed() {
     const feed = document.getElementById('orderFeed');
     feed.innerHTML = ''; 
 
+    // Filter logic based on live Google Sheets data
     let filteredOrders = liveOrders.filter(order => {
         let isZeroAmount = !order.amount || order.amount == 0;
         
@@ -115,7 +126,6 @@ function renderFeed() {
             displayStatus = 'Payment Pending';
         }
 
-        // Details preview
         let shortDetails = order.details ? order.details.substring(0, 60) + (order.details.length > 60 ? '...' : '') : 'No details provided.';
         
         feed.innerHTML += `
@@ -132,14 +142,77 @@ function renderFeed() {
     });
 }
 
+// --- RENDER LIVE SETTINGS ---
 function renderSettings() {
     const feed = document.getElementById('settingsFeed');
-    feed.innerHTML = `
+    
+    let html = `
         <div style="margin-bottom: 20px;">
             <button class="action-btn" style="background:#ef4444; color:white; width:auto; padding:8px 20px;" onclick="logout()">Logout / Clear Remember Me</button>
         </div>
-        <p style="color:#64748b;">Settings tables go here (same as previous code)...</p>
+        <div style="margin-bottom: 40px;">
+            <h3 style="color: #1e293b; margin-bottom: 15px;">Product Pricing & Links</h3>
+            <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th>Items</th>
+                            <th>Amount</th>
+                            <th>Discounted Amount</th>
+                            <th>Tutorial Link</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
+
+    liveSettings.forEach((setting, index) => {
+        html += `
+            <tr>
+                <td><input type="text" value="${setting.item}" id="item-${index}"></td>
+                <td><input type="number" value="${setting.amount}" id="amt-${index}"></td>
+                <td><input type="number" value="${setting.discount}" id="disc-${index}"></td>
+                <td><input type="text" value="${setting.link}" placeholder="https..." id="link-${index}"></td>
+                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Products')">Save</button></td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div></div>`;
+
+    html += `
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: #1e293b; margin-bottom: 15px;">Company Profile & Authentication</h3>
+            <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Setting Name</th>
+                            <th style="width: 60%;">Value</th>
+                            <th style="width: 15%;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    liveCompanySettings.forEach((setting, index) => {
+        let inputType = setting.key.includes("Password") ? "password" : "text";
+        html += `
+            <tr>
+                <td style="font-weight: 600; color: #1e293b;">${setting.key}</td>
+                <td>
+                    ${setting.key === "Note" 
+                        ? `<textarea id="comp-${index}" style="width:100%; padding:8px 12px; border:1px solid #e2e8f0; border-radius:6px; font-family:inherit; resize:vertical; min-height:60px;">${setting.value}</textarea>`
+                        : `<input type="${inputType}" value="${setting.value}" id="comp-${index}">`
+                    }
+                </td>
+                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Company')">Save</button></td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div></div>`;
+    feed.innerHTML = html;
 }
 
 // --- DYNAMIC ACTION MODAL ---
@@ -158,7 +231,7 @@ function openActionModal(ticketId) {
         <div style="margin-top:8px; padding:10px; background:#ffffff; border:1px solid #e2e8f0; border-radius:6px;">
             <strong>Details:</strong><br>${order.details || 'N/A'}
         </div>
-        <div style="margin-top:10px;"><strong>History:</strong> <span style="color:#64748b;">${order.history || 'No emails sent yet.'}</span></div>
+        <div style="margin-top:10px;"><strong>History:</strong> <span style="color:#64748b; white-space:pre-wrap;">${order.history || 'No emails sent yet.'}</span></div>
     </div>`;
 
     let trackerStatus = '';
@@ -193,7 +266,21 @@ function openActionModal(ticketId) {
                 <label style="font-weight:bold; font-size:0.9rem;">Final App Link:</label>
                 <input type="text" id="appLink" placeholder="https://..." class="modal-input">
             </div>
+            <div style="display:flex; gap:10px; margin-bottom:15px;">
+                <div style="flex:1;">
+                    <label style="font-weight:bold; font-size:0.9rem;">User ID:</label>
+                    <input type="text" id="userId" placeholder="Admin" class="modal-input">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-weight:bold; font-size:0.9rem;">Password:</label>
+                    <input type="text" id="userPass" placeholder="***" class="modal-input">
+                </div>
+            </div>
             <button class="action-btn btn-deliver" onclick="triggerAction('Deliver App', '${ticketId}')">🚀 Deliver App</button>
+            <div style="margin-bottom:15px; margin-top:15px;">
+                <textarea id="customMsg" placeholder="Type message to client..." class="modal-input" style="height:60px;"></textarea>
+            </div>
+            <button class="action-btn" style="background:#e2e8f0; color:#1e293b;" onclick="triggerAction('Custom Mail', '${ticketId}')">✉️ Send Message</button>
         `;
     } else {
         trackerStatus = 'Completed';
@@ -228,13 +315,11 @@ function openTracker(ticketId, status) {
     document.getElementById('trackerModal').classList.add('active');
 }
 
+// --- PLACEHOLDER FOR WRITING DATA ---
 function triggerAction(action, ticketId) {
-    alert(`Payload Prepared!\nAction: ${action}\nTicket: ${ticketId}`);
+    alert(`Read Only Mode: Success!\n\nTo make this button execute [${action}] and update your Google Sheet, we need to add a small POST function to your Code.gs next!`);
     closeModal('actionModal');
 }
 
 function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
-function refreshData() { 
-    document.getElementById('appLoader').classList.add('active');
-    setTimeout(() => { document.getElementById('appLoader').classList.remove('active'); renderFeed(); }, 800);
-}
+function refreshData() { fetchCRMData(); }
