@@ -58,6 +58,105 @@
         </div>
     </div>
 
+    <!-- For NEW REQUESTS -->
+<div class="card-actions">
+    <button class="btn-quote" onclick="openQuoteModal(id)">Send Quotation</button>
+    <button class="btn-mail" onclick="openMailModal(id)">Send Mail</button>
+    <button class="btn-view" onclick="openTrackerModal(id)">View</button>
+</div>
+
+<!-- For WORK PENDING -->
+<div class="card-actions">
+    <button class="btn-deliver" onclick="openDeliveryModal(id)">Deliver App</button>
+    <button class="btn-view" onclick="openTrackerModal(id)">View</button>
+</div>
+
+<!-- For COMPLETED -->
+<div class="card-actions">
+    <button class="btn-view" onclick="openTrackerModal(id)">View</button>
+</div>
+
+
+    <!-- Tracker Modal -->
+<div id="trackerModal" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="closeTrackerModal()">&times;</span>
+        <h3>Project Pipeline: <span id="track-id">CF-849201</span></h3>
+        
+        <div class="timeline">
+            <div class="timeline-step completed">
+                <div class="step-icon">✓</div>
+                <div class="step-text">
+                    <strong>Request Received</strong>
+                    <p>Client initiated B2B E-Commerce Setup.</p>
+                </div>
+            </div>
+            <div class="timeline-step completed">
+                <div class="step-icon">✓</div>
+                <div class="step-text">
+                    <strong>Quotation Sent</strong>
+                    <p>₹5999 quoted to client.</p>
+                </div>
+            </div>
+            <div class="timeline-step active">
+                <div class="step-icon">⏳</div>
+                <div class="step-text">
+                    <strong>Payment Pending</strong>
+                    <p>Waiting for client confirmation.</p>
+                </div>
+            </div>
+            <div class="timeline-step pending">
+                <div class="step-icon">📦</div>
+                <div class="step-text">
+                    <strong>App Delivered</strong>
+                    <p>Pending final handover.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Flipkart Style Timeline CSS */
+.timeline { border-left: 2px solid #ddd; margin: 20px 0 0 15px; padding-left: 20px; }
+.timeline-step { position: relative; margin-bottom: 20px; }
+.step-icon {
+    position: absolute; left: -32px; top: 0;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: #fff; border: 2px solid #ddd;
+    text-align: center; line-height: 20px; font-size: 12px;
+}
+.completed .step-icon { border-color: #28a745; background: #28a745; color: white; }
+.active .step-icon { border-color: #007bff; background: #007bff; color: white; }
+.step-text strong { display: block; color: #333; }
+.step-text p { margin: 2px 0 0; font-size: 13px; color: #777; }
+</style>
+
+    <!-- Login Overlay -->
+<div id="loginOverlay" class="login-modal">
+    <div class="login-box">
+        <img src="your-cellflow-logo.png" class="cellflow-logo" alt="Cellflow">
+        <h3>Admin Portal</h3>
+        <input type="text" id="adminId" placeholder="User ID">
+        <input type="password" id="adminPass" placeholder="Password">
+        <button onclick="verifyLogin()">Login</button>
+    </div>
+</div>
+
+<script>
+function verifyLogin() {
+    const user = document.getElementById("adminId").value;
+    const pass = document.getElementById("adminPass").value;
+    
+    // In your final Apps Script, this will check against the 'Settings' sheet
+    if(user === "admin_dipun" && pass === "Cellflow@2026") {
+        document.getElementById("loginOverlay").style.display = "none";
+    } else {
+        alert("Access Denied. Invalid credentials.");
+    }
+}
+</script>
+
     <script src="app.js"></script>
 </body>
 </html>
