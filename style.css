@@ -5,6 +5,18 @@
 @keyframes pulseLogo { 0% { transform: scale(0.9); box-shadow: 0 0 0 rgba(0, 86, 179, 0); } 100% { transform: scale(1.1); box-shadow: 0 20px 40px rgba(0, 86, 179, 0.2); border-radius: 50%; } }
 .app-loader p { color: #64748b; font-weight: 600; font-size: 1.1rem; }
 
+/* Header UI Adjustments */
+.header-container .cellflow-logo {
+    max-width: 150px; /* Increased size */
+    height: auto;
+}
+
+.header-container .brand-text {
+    font-size: 14px; /* Reduced text size */
+    font-weight: 500;
+    color: #555;
+}
+
 /* Base Variables & Reset */
 :root {
     --bg-color: #f4f7fc;
