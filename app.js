@@ -1,9 +1,43 @@
-// --- LOGIN LOGIC ---
+// --- MOCK DATA (JSON) ---
+const mockOrders = [
+    { ticketId: "CF-849201", name: "Shubhabrata Dokal", type: "B2B E-Commerce Setup", paymentStatus: "Pending", workCompleted: false, time: "10 mins ago", history: "[10 Aug] Client requested quote." },
+    { ticketId: "CF-492103", name: "SK MD Asib", type: "Mess Khata Management", paymentStatus: "Paid", workCompleted: false, time: "2 hours ago", history: "[11 Aug] Payment received." },
+    { ticketId: "CF-112233", name: "Khadimul Islam", type: "CBT Portal", paymentStatus: "Paid", workCompleted: true, time: "1 day ago", history: "[12 Aug] App delivered." }
+];
+
+// Product Pricing (From "Payment Ditels" sheet)
+const mockSettings = [
+    { item: "Mess Khata", amount: 199, discount: 99, link: "https://drive.google.com/..." },
+    { item: "Bill Flow", amount: 8999, discount: 5999, link: "" },
+    { item: "Mok Test APK", amount: 6999, discount: 3999, link: "" }
+];
+
+// Company Profile & Admin Auth (From "Settings" sheet)
+const mockCompanySettings = [
+    { key: "AdminID", value: "admin_dipun" },
+    { key: "AdminPassword", value: "Cellflow@2026" },
+    { key: "CompanyName", value: "Cell Flow" },
+    { key: "CompanyAddress", value: "Jamalpur, Purba barddhaman pin 7012408" },
+    { key: "CompanyPhone", value: "7501230258" },
+    { key: "CompanyEmail", value: "cellflow24@gmail.com" },
+    { key: "CompanyWebsite", value: "cellflow24.github.io" },
+    { key: "BankName", value: "SBI" },
+    { key: "AccountNumber", value: "567777393637" },
+    { key: "IFSCCode", value: "SBIN00123" },
+    { key: "UPIID", value: "cellflow@oksbi" },
+    { key: "Note", value: "This is a system-generated invoice and requires no physical signature. Thank you for doing business with Cellflow." }
+];
+
+// --- LOGIN LOGIC (Now dynamic!) ---
 function verifyLogin() {
     const user = document.getElementById("adminId").value;
     const pass = document.getElementById("adminPass").value;
     
-    if(user === "admin_dipun" && pass === "Cellflow@2026") {
+    // Pull the credentials directly from the settings array
+    const realUser = mockCompanySettings.find(s => s.key === "AdminID").value;
+    const realPass = mockCompanySettings.find(s => s.key === "AdminPassword").value;
+    
+    if(user === realUser && pass === realPass) {
         document.getElementById("loginOverlay").style.display = "none";
         document.getElementById('appLoader').classList.add('active');
         setTimeout(() => { 
@@ -14,19 +48,6 @@ function verifyLogin() {
         alert("Access Denied. Invalid credentials.");
     }
 }
-
-// --- MOCK DATA (JSON) ---
-const mockOrders = [
-    { ticketId: "CF-849201", name: "Shubhabrata Dokal", type: "B2B E-Commerce Setup", paymentStatus: "Pending", workCompleted: false, time: "10 mins ago", history: "[10 Aug] Client requested quote." },
-    { ticketId: "CF-492103", name: "SK MD Asib", type: "Mess Khata Management", paymentStatus: "Paid", workCompleted: false, time: "2 hours ago", history: "[11 Aug] Payment received." },
-    { ticketId: "CF-112233", name: "Khadimul Islam", type: "CBT Portal", paymentStatus: "Paid", workCompleted: true, time: "1 day ago", history: "[12 Aug] App delivered." }
-];
-
-const mockSettings = [
-    { item: "Mess Khata", amount: 199, discount: 99, link: "https://drive.google.com/..." },
-    { item: "Bill Flow", amount: 8999, discount: 5999, link: "" },
-    { item: "Mok Test APK", amount: 6999, discount: 3999, link: "" }
-];
 
 let currentFilter = 'Payment Pending';
 
@@ -82,38 +103,76 @@ function renderFeed() {
     });
 }
 
-// --- RENDER SETTINGS (Payment Ditels) ---
+// --- RENDER SETTINGS (Products AND Company Details) ---
 function renderSettings() {
     const feed = document.getElementById('settingsFeed');
-    let tableHtml = `
-        <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
-            <table class="settings-table">
-                <thead>
-                    <tr>
-                        <th>Items</th>
-                        <th>Amount</th>
-                        <th>Discounted Amount</th>
-                        <th>Tutorial Link</th>
-                        <th>Action</th>
-                    </tr>
-                </thead>
-                <tbody>
+    
+    // 1. Products Table
+    let html = `
+        <div style="margin-bottom: 40px;">
+            <h3 style="color: var(--text-dark); margin-bottom: 15px;">Product Pricing & Links</h3>
+            <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th>Items</th>
+                            <th>Amount</th>
+                            <th>Discounted Amount</th>
+                            <th>Tutorial Link</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
     `;
 
     mockSettings.forEach((setting, index) => {
-        tableHtml += `
+        html += `
             <tr>
                 <td><input type="text" value="${setting.item}" id="item-${index}"></td>
                 <td><input type="number" value="${setting.amount}" id="amt-${index}"></td>
                 <td><input type="number" value="${setting.discount}" id="disc-${index}"></td>
                 <td><input type="text" value="${setting.link}" placeholder="https..." id="link-${index}"></td>
-                <td><button class="btn-refresh" style="background:#0056b3; color:white;" onclick="alert('Saved row ${index} to G-Sheets!')">Save</button></td>
+                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="alert('Saved row ${index} to G-Sheets!')">Save</button></td>
             </tr>
         `;
     });
 
-    tableHtml += `</tbody></table></div>`;
-    feed.innerHTML = tableHtml;
+    html += `</tbody></table></div></div>`;
+
+    // 2. Company Profile & Auth Table
+    html += `
+        <div style="margin-bottom: 20px;">
+            <h3 style="color: var(--text-dark); margin-bottom: 15px;">Company Profile & Authentication</h3>
+            <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
+                <table class="settings-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 25%;">Setting Name</th>
+                            <th style="width: 60%;">Value</th>
+                            <th style="width: 15%;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+    `;
+
+    mockCompanySettings.forEach((setting, index) => {
+        let inputType = setting.key.includes("Password") ? "password" : "text";
+        html += `
+            <tr>
+                <td style="font-weight: 600; color: var(--text-dark);">${setting.key}</td>
+                <td>
+                    ${setting.key === "Note" 
+                        ? `<textarea id="comp-${index}" style="width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-family:inherit; resize:vertical; min-height:60px;">${setting.value}</textarea>`
+                        : `<input type="${inputType}" value="${setting.value}" id="comp-${index}">`
+                    }
+                </td>
+                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="alert('Saved ${setting.key} to G-Sheets!')">Save</button></td>
+            </tr>
+        `;
+    });
+
+    html += `</tbody></table></div></div>`;
+    feed.innerHTML = html;
 }
 
 // --- DYNAMIC ACTION MODAL (Merged Inputs + Tracker) ---
