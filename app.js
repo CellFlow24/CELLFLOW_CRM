@@ -313,10 +313,70 @@ function openTracker(ticketId, status) {
     document.getElementById('trackerModal').classList.add('active');
 }
 
-// --- PLACEHOLDER FOR WRITING DATA ---
+// --- LIVE GOOGLE SHEETS API WRITER ---
 function triggerAction(action, ticketId) {
-    alert(`Read Only Mode: Success!\n\nTo make this button execute [${action}] and update your Google Sheet, we need to add a small POST function to your Code.gs next!`);
+    let formData = new FormData();
+    formData.append("crmAction", action);
+    formData.append("ticketId", ticketId);
+
+    // 1. Gather Action Data
+    if (action === 'Send Quote' || action === 'Resend Quote') {
+        let amt = document.getElementById('quoteAmount')?.value;
+        if (action === 'Resend Quote') amt = liveOrders.find(o => o.ticketId === ticketId).amount;
+        if (!amt) return alert("Please enter an amount.");
+        formData.append("amount", amt);
+    } 
+    else if (action === 'Custom Mail') {
+        let msg = document.getElementById('customMsg').value;
+        if (!msg) return alert("Please type a message.");
+        formData.append("message", msg);
+    } 
+    else if (action === 'Deliver App') {
+        let link = document.getElementById('appLink').value;
+        let uid = document.getElementById('userId').value;
+        let pass = document.getElementById('userPass').value;
+        if (!link || !uid || !pass) return alert("Please fill all App Credentials.");
+        formData.append("appLink", link);
+        formData.append("userId", uid);
+        formData.append("userPass", pass);
+    } 
+    else if (action === 'Update Setting') {
+        let dataArray = [];
+        if (ticketId === 'Products') {
+            liveSettings.forEach((s, i) => {
+                dataArray.push([
+                    document.getElementById(`item-${i}`).value,
+                    document.getElementById(`amt-${i}`).value,
+                    document.getElementById(`disc-${i}`).value,
+                    document.getElementById(`link-${i}`).value
+                ]);
+            });
+        } else if (ticketId === 'Company') {
+            liveCompanySettings.forEach((s, i) => {
+                dataArray.push([ s.key, document.getElementById(`comp-${i}`).value ]);
+            });
+        }
+        formData.append("settingsType", ticketId);
+        formData.append("settingsData", JSON.stringify(dataArray));
+    }
+
+    // 2. Show Loading State
     closeModal('actionModal');
+    document.getElementById('appLoader').classList.add('active');
+    document.querySelector('#appLoader p').textContent = "Executing Command...";
+
+    // 3. Send to Google Apps Script
+    fetch(API_URL, { method: 'POST', body: formData })
+        .then(res => res.json())
+        .then(data => {
+            document.querySelector('#appLoader p').textContent = "Syncing with Google Sheets...";
+            refreshData(); // Download the fresh sheet data!
+        })
+        .catch(err => {
+            alert("Error executing command. Check internet connection.");
+            document.getElementById('appLoader').classList.remove('active');
+            document.querySelector('#appLoader p').textContent = "Syncing with Google Sheets...";
+        });
 }
 
 function closeModal(modalId) { document.getElementById(modalId).classList.remove('active'); }
