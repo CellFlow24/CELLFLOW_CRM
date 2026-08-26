@@ -159,14 +159,12 @@ function renderSettings() {
             <button class="action-btn" style="background:#ef4444; color:white; width:auto; padding:8px 20px;" onclick="logout()">Logout / Clear Remember Me</button>
         </div>
         <div style="margin-bottom: 40px;">
-            <h3 style="color: #1e293b; margin-bottom: 15px;">Product Pricing & Links</h3>
+            <h3 style="color: #1e293b; margin-bottom: 15px;">App Tutorial Links</h3>
             <div style="background:white; border-radius:12px; border:1px solid #e2e8f0; overflow-x:auto;">
                 <table class="settings-table">
                     <thead>
                         <tr>
-                            <th>Items</th>
-                            <th>Amount</th>
-                            <th>Discounted Amount</th>
+                            <th>App Name</th>
                             <th>Tutorial Link</th>
                             <th>Action</th>
                         </tr>
@@ -177,9 +175,13 @@ function renderSettings() {
     liveSettings.forEach((setting, index) => {
         html += `
             <tr>
-                <td><input type="text" value="${setting.item}" id="item-${index}"></td>
-                <td><input type="number" value="${setting.amount}" id="amt-${index}"></td>
-                <td><input type="number" value="${setting.discount}" id="disc-${index}"></td>
+                <td style="font-weight: 600; color: #1e293b;">
+                    ${setting.item}
+                    <!-- Hidden inputs so we don't break the Google Sheet layout when saving -->
+                    <input type="hidden" value="${setting.item}" id="item-${index}">
+                    <input type="hidden" value="${setting.amount}" id="amt-${index}">
+                    <input type="hidden" value="${setting.discount}" id="disc-${index}">
+                </td>
                 <td><input type="text" value="${setting.link}" placeholder="https..." id="link-${index}"></td>
                 <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Products')">Save</button></td>
             </tr>
@@ -187,7 +189,7 @@ function renderSettings() {
     });
 
     html += `</tbody></table></div></div>`;
-
+    
     html += `
         <div style="margin-bottom: 20px;">
             <h3 style="color: #1e293b; margin-bottom: 15px;">Company Profile & Authentication</h3>
