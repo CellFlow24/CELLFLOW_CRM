@@ -4,8 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Cellflow CRM | Admin</title>
+    
+    <!-- 1. ADD THESE PWA LINKS SO THE BROWSER KNOWS IT'S AN APP -->
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="logo.png">
+    <meta name="theme-color" content="#0056b3">
+    
     <link rel="stylesheet" href="style.css">
 </head>
+    
 <body>
 
     <!-- Login Overlay -->
@@ -85,7 +92,13 @@
             <div class="timeline" id="trackerTimeline"></div>
         </div>
     </div>
-
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js')
+            .then(() => console.log("Service Worker Registered! App is installable."))
+            .catch(err => console.log("SW Failed", err));
+        }
+    </script>
     <script src="app.js"></script>
 </body>
 </html>
