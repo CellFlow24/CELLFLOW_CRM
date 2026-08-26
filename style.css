@@ -92,7 +92,7 @@ body { background-color: var(--bg-color); color: var(--text-dark); overflow-x: h
 .mobile-logo-img { width: 45px; height: 45px; margin-bottom: 4px; border-radius: 50%; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
 .logo-text { font-size: 1.1rem; font-weight: 800; color: var(--primary); }
 .logo-text span { color: var(--text-dark); }
-.mobile-header { position: relative; height: 85px; }
+.mobile-header { position: sticky; top: 0; height: 85px; z-index: 950; background: var(--card-bg); }
 .mobile-header .admin-profile { position: absolute; right: 20px; top: 25px; z-index: 10; }
 
 /* Taller Tracker Modal */
