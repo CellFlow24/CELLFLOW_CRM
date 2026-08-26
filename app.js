@@ -44,22 +44,30 @@ function fetchCRMData() {
         });
 }
 
-// --- SECURE LOGIN LOGIC ---
+// --- SECURE LOGIN LOGIC (Bulletproofed) ---
 function verifyLogin() {
-    const user = document.getElementById("adminId").value;
-    const pass = document.getElementById("adminPass").value;
+    // Grab what you typed and strip invisible spaces
+    const user = document.getElementById("adminId").value.trim().toLowerCase();
+    const pass = document.getElementById("adminPass").value.trim();
     
-    // Check against live data from Settings Sheet
-    const realUserObj = liveCompanySettings.find(s => s.key === "AdminID");
-    const realPassObj = liveCompanySettings.find(s => s.key === "AdminPassword");
+    // Find the credentials from the live Google Sheet data, ignoring spaces
+    const realUserObj = liveCompanySettings.find(s => s.key.toString().trim() === "AdminID");
+    const realPassObj = liveCompanySettings.find(s => s.key.toString().trim() === "AdminPassword");
     
-    if (realUserObj && realPassObj && user === realUserObj.value && pass === realPassObj.value) {
-        localStorage.setItem('crm_logged_in', 'true'); // Remember login
-        document.getElementById("loginOverlay").style.display = "none";
-        renderFeed();
-    } else {
-        alert("Access Denied. Invalid credentials.");
+    if (realUserObj && realPassObj) {
+        // Strip spaces from the Google Sheet values just to be safe
+        const safeUser = realUserObj.value.toString().trim().toLowerCase();
+        const safePass = realPassObj.value.toString().trim();
+
+        if (user === safeUser && pass === safePass) {
+            localStorage.setItem('crm_logged_in', 'true'); // Remember login
+            document.getElementById("loginOverlay").style.display = "none";
+            renderFeed();
+            return; // Success! Stop here.
+        }
     }
+    
+    alert("Access Denied. Invalid credentials.");
 }
 
 function logout() {
