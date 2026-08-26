@@ -1,0 +1,22 @@
+{
+  "name": "Cellflow CRM Admin",
+  "short_name": "Cellflow CRM",
+  "description": "Internal CRM and Order Management for Cellflow",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7fc",
+  "theme_color": "#0056b3",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "logo.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
