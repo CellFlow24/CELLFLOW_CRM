@@ -1,8 +1,0 @@
-[{
-      "relation": ["delegate_permission/common.handle_all_urls"],
-      "target": {
-        "namespace": "android_app",
-        "package_name": "io.github.cellflow24.twa",
-        "sha256_cert_fingerprints": ["74:A1:5F:A3:B0:63:D0:AE:97:D2:75:FA:82:B1:E0:DD:7E:D7:EB:69:DA:00:A5:E9:15:38:F2:9F:FE:43:71:BC"]
-      }
-    }]
