@@ -16,7 +16,7 @@ function fetchCRMData() {
     document.getElementById('appLoader').classList.add('active');
     
     // Fetch data from your Google Script doGet function
-    fetch(API_URL + "?action=getCRMData")
+    fetch(API_URL + "?action=getCRMData", { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
             // Store the real data
