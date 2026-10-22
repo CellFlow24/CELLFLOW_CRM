@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cellflow-crm-v6';
+const CACHE_NAME = 'cellflow-crm-v7';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
