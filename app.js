@@ -1,11 +1,14 @@
 // --- LIVE GOOGLE SHEETS API URL ---
 const API_URL = "https://script.google.com/macros/s/AKfycbzWinkvpaQNr25tKjePWeubGhEAV-ApWWJ_ELZcv7UJRr9xSxB4DRDehRnv6S4PZMIXKg/exec";
 
-// --- GLOBAL DATA STORAGE (Starts 100% Empty!) ---
+// --- GLOBAL DATA STORAGE ---
 let liveOrders = [];
 let liveSettings = [];
 let liveCompanySettings = [];
 let currentFilter = 'Inquiries';
+
+// Session tracking (Prevents asking for login again when hitting the refresh button inside the app)
+let isSessionActive = false; 
 
 // --- INITIALIZATION & LIVE FETCH ---
 window.onload = () => {
@@ -15,27 +18,30 @@ window.onload = () => {
 function fetchCRMData() {
     document.getElementById('appLoader').classList.add('active');
     
-    // Fetch data from your Google Script doGet function
     fetch(API_URL + "?action=getCRMData", { redirect: 'follow' })
         .then(res => res.json())
         .then(data => {
-            // Store the real data
             liveOrders = data.orders || [];
             liveSettings = data.settings || [];
             liveCompanySettings = data.companySettings || [];
             
             document.getElementById('appLoader').classList.remove('active');
             
-            // Auto-login check (PWA Feature)
-            if (localStorage.getItem('crm_logged_in') === 'true') {
+            // If the user is already actively working in the dashboard and just hit refresh
+            if (isSessionActive) {
                 document.getElementById("loginOverlay").style.display = "none";
-                if(currentFilter === 'Settings') {
-                    renderSettings();
-                } else {
-                    renderFeed();
-                }
+                if(currentFilter === 'Settings') renderSettings();
+                else renderFeed();
             } else {
+                // If it's a fresh load, ALWAYS show the login screen
                 document.getElementById("loginOverlay").style.display = "flex";
+                
+                // Pre-fill the inputs if they saved them previously
+                if (localStorage.getItem('crm_saved_id')) {
+                    document.getElementById('adminId').value = localStorage.getItem('crm_saved_id');
+                    document.getElementById('adminPass').value = localStorage.getItem('crm_saved_pass');
+                    document.getElementById('rememberMe').checked = true;
+                }
             }
         })
         .catch(err => {
@@ -44,26 +50,35 @@ function fetchCRMData() {
         });
 }
 
-// --- SECURE LOGIN LOGIC (Bulletproofed) ---
+// --- SECURE LOGIN LOGIC ---
 function verifyLogin() {
-    // Grab what you typed and strip invisible spaces
-    const user = document.getElementById("adminId").value.trim().toLowerCase();
-    const pass = document.getElementById("adminPass").value.trim();
+    const userTyped = document.getElementById("adminId").value.trim();
+    const passTyped = document.getElementById("adminPass").value.trim();
+    const userLower = userTyped.toLowerCase();
     
-    // Find the credentials from the live Google Sheet data, ignoring spaces
     const realUserObj = liveCompanySettings.find(s => s.key.toString().trim() === "AdminID");
     const realPassObj = liveCompanySettings.find(s => s.key.toString().trim() === "AdminPassword");
     
     if (realUserObj && realPassObj) {
-        // Strip spaces from the Google Sheet values just to be safe
         const safeUser = realUserObj.value.toString().trim().toLowerCase();
         const safePass = realPassObj.value.toString().trim();
 
-        if (user === safeUser && pass === safePass) {
-            localStorage.setItem('crm_logged_in', 'true'); // Remember login
+        if (userLower === safeUser && passTyped === safePass) {
+            // Success! Set session to active
+            isSessionActive = true; 
+            
+            // Check if they want to remember the credentials
+            if (document.getElementById('rememberMe').checked) {
+                localStorage.setItem('crm_saved_id', userTyped); // Save exact casing they typed
+                localStorage.setItem('crm_saved_pass', passTyped);
+            } else {
+                localStorage.removeItem('crm_saved_id');
+                localStorage.removeItem('crm_saved_pass');
+            }
+
             document.getElementById("loginOverlay").style.display = "none";
             renderFeed();
-            return; // Success! Stop here.
+            return; 
         }
     }
     
@@ -71,8 +86,9 @@ function verifyLogin() {
 }
 
 function logout() {
-    localStorage.removeItem('crm_logged_in');
-    location.reload();
+    isSessionActive = false; // Kill the session
+    // We do NOT clear localStorage here so their ID stays remembered for next time
+    location.reload(); 
 }
 
 // --- TAB SWITCHING ---
@@ -104,7 +120,6 @@ function renderFeed() {
     const feed = document.getElementById('orderFeed');
     feed.innerHTML = ''; 
 
-    // Filter logic based on live Google Sheets data
     let filteredOrders = liveOrders.filter(order => {
         let isZeroAmount = !order.amount || order.amount == 0;
         
@@ -115,7 +130,7 @@ function renderFeed() {
     });
 
     if (filteredOrders.length === 0) {
-        feed.innerHTML = `<p style="color: #64748b; text-align:center; padding: 40px;">No records found for ${currentFilter}.</p>`;
+        feed.innerHTML = `<p style="color: #64748b; text-align:center; padding: 40px; font-weight: 500;">No records found for ${currentFilter}.</p>`;
         return;
     }
 
@@ -143,7 +158,7 @@ function renderFeed() {
                     <span class="time-ago">${order.time}</span>
                 </div>
                 <div class="client-name">${order.name}</div>
-                <div class="req-type" style="font-size:0.9rem; margin-bottom:5px; color: var(--primary); font-weight:600;">${order.type}</div>
+                <div class="req-type" style="font-size:0.9rem; margin-bottom:5px; color: var(--primary); font-weight:700;">${order.type}</div>
                 <div style="font-size:0.85rem; color:#64748b; margin-bottom:12px; line-height:1.4;">${shortDetails}</div>
                 <div class="status-badge ${statusClass}">${displayStatus}</div>
             </div>`;
@@ -155,8 +170,8 @@ function renderSettings() {
     const feed = document.getElementById('settingsFeed');
     
     let html = `
-        <div style="margin-bottom: 20px;">
-            <button class="action-btn" style="background:#ef4444; color:white; width:auto; padding:8px 20px;" onclick="logout()">Logout / Clear Remember Me</button>
+        <div style="margin-bottom: 25px;">
+            <button class="action-btn" style="background:#ef4444; color:white; width:auto; padding:10px 24px; border-radius: 8px;" onclick="logout()">🚪 Logout</button>
         </div>
         <div style="margin-bottom: 40px;">
             <h3 style="color: #1e293b; margin-bottom: 15px;">App Tutorial Links</h3>
@@ -177,13 +192,12 @@ function renderSettings() {
             <tr>
                 <td style="font-weight: 600; color: #1e293b;">
                     ${setting.item}
-                    <!-- Hidden inputs so we don't break the Google Sheet layout when saving -->
                     <input type="hidden" value="${setting.item}" id="item-${index}">
                     <input type="hidden" value="${setting.amount}" id="amt-${index}">
                     <input type="hidden" value="${setting.discount}" id="disc-${index}">
                 </td>
                 <td><input type="text" value="${setting.link}" placeholder="https..." id="link-${index}"></td>
-                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Products')">Save</button></td>
+                <td><button class="btn-refresh" style="background:#0b7ed6; color:white; border:none;" onclick="triggerAction('Update Setting', 'Products')">Save</button></td>
             </tr>
         `;
     });
@@ -216,7 +230,7 @@ function renderSettings() {
                         : `<input type="${inputType}" value="${setting.value}" id="comp-${index}">`
                     }
                 </td>
-                <td><button class="btn-refresh" style="background:#0056b3; color:white; border:none;" onclick="triggerAction('Update Setting', 'Company')">Save</button></td>
+                <td><button class="btn-refresh" style="background:#0b7ed6; color:white; border:none;" onclick="triggerAction('Update Setting', 'Company')">Save</button></td>
             </tr>
         `;
     });
@@ -329,7 +343,6 @@ function triggerAction(action, ticketId) {
     formData.append("crmAction", action);
     formData.append("ticketId", ticketId);
 
-    // 1. Gather Action Data
     if (action === 'Send Quote' || action === 'Resend Quote') {
         let amt = document.getElementById('quoteAmount')?.value;
         if (action === 'Resend Quote') amt = liveOrders.find(o => o.ticketId === ticketId).amount;
@@ -370,17 +383,15 @@ function triggerAction(action, ticketId) {
         formData.append("settingsData", JSON.stringify(dataArray));
     }
 
-    // 2. Show Loading State
     closeModal('actionModal');
     document.getElementById('appLoader').classList.add('active');
     document.querySelector('#appLoader p').textContent = "Executing Command...";
 
-    // 3. Send to Google Apps Script
     fetch(API_URL, { method: 'POST', body: formData })
         .then(res => res.json())
         .then(data => {
             document.querySelector('#appLoader p').textContent = "Syncing with Google Sheets...";
-            refreshData(); // Download the fresh sheet data!
+            fetchCRMData(); // Download the fresh sheet data!
         })
         .catch(err => {
             alert("Error executing command. Check internet connection.");
