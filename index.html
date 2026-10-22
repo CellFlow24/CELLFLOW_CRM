@@ -18,9 +18,20 @@
     <!-- Login Overlay -->
     <div id="loginOverlay" class="login-modal">
         <div class="login-box">
+            <!-- Added Logo to make it look premium -->
+            <img src="logo.png" alt="CellFlow" style="width: 60px; height: 60px; border-radius: 12px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+            
             <h2>Admin Portal</h2>
             <input type="text" id="adminId" placeholder="User ID">
             <input type="password" id="adminPass" placeholder="Password">
+            
+            <!-- New Remember Me Checkbox -->
+            <div style="text-align: left; margin-bottom: 20px; padding-left: 5px;">
+                <label style="cursor: pointer; display: flex; align-items: center; gap: 8px; font-size: 0.9rem; color: #64748b; font-weight: 600;">
+                    <input type="checkbox" id="rememberMe" style="width: 16px; height: 16px; margin: 0;"> Remember ID & Password
+                </label>
+            </div>
+
             <button onclick="verifyLogin()">Login to Dashboard</button>
         </div>
     </div>
